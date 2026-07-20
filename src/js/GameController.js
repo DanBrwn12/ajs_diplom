@@ -7,18 +7,22 @@ import Swordsman from './characters/Swordsman';
 import Daemon from './characters/Daemon';
 import Undead from './characters/Undead';
 import Vampire from './characters/Vampire';
+import GamePlay from './GamePlay';
+import GameState from './GameState';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.characterPossitionList = []
+    this.characterPossitionList = [];
+    this.selectedCell = null;
+    this.state = new GameState()
   }
 
   init() {
     this.gamePlay.drawUi(themes.prairie);
     // TODO: load saved stated from stateService
-  
+    
     const playerTeam = generateTeam([Bowman, Magician, Swordsman], 5, 4);
     const enemyTeam = generateTeam([Daemon, Undead, Vampire], 5, 4);
 
@@ -57,18 +61,51 @@ export default class GameController {
     this.gamePlay.redrawPositions(this.characterPossitionList);
 
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
-    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this))
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this))
   }
 
   onCellClick(index) {
-    // TODO: react to click
+    const positionedChar = this.characterPossitionList.find(p => p.position === index);
+    const playerCharacters = ['bowman', 'magician', 'swordsman'];
+    const enemyCharacters = ['daemon', 'undead', 'vampire'];
+    
+    if (!positionedChar) {
+      GamePlay.showError('Выберите персонажа');
+      return;
+    } 
+    
+    const character = positionedChar.character;
+
+    if (enemyCharacters.includes(character.type)) {
+      GamePlay.showError('Вы не можете ходить персонажем соперника');
+    } else if (playerCharacters.includes(character.type)) {
+      console.log(index, this.selectedCell)
+      
+      if (this.selectedCell !== null) {
+        console.log('selectedCell не null')
+        if (this.selectedCell !== index) {
+          console.log('selectedCell !== index')
+          this.gamePlay.deselectCell(this.selectedCell);
+          this.gamePlay.selectCell(index);
+          this.selectedCell = index;
+        } else {
+          this.gamePlay.deselectCell(index);
+          this.selectedCell = null;
+        }
+      } else {
+        this.gamePlay.selectCell(index);
+        this.selectedCell = index;
+      }
+      
+    }
   }
 
   onCellEnter(index) {
     const positionedChar = this.characterPossitionList.find(p => p.position === index);
     if (positionedChar) {
       const character = positionedChar.character;
-      this.gamePlay.showCellTooltip(this.getCharacterInfo(character), index)
+      this.gamePlay.showCellTooltip(GameController.getCharacterInfo(character), index);
     }
   }
 
