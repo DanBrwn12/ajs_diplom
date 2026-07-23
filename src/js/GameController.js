@@ -72,30 +72,48 @@ export default class GameController {
   onCellClick(index) {
     const positionedChar = this.characterPossitionList.find(p => p.position === index);
     
-    if (!positionedChar) {
-      GamePlay.showError('Выберите персонажа');
-      return;
-    } 
-    
-    const character = positionedChar.character;
+    if (positionedChar) {
+      const character = positionedChar.character;
 
-    if (this.enemyCharactersType.includes(character.type)) {
-      GamePlay.showError('Вы не можете ходить персонажем соперника');
-    } else if (this.playerCharacrersType.includes(character.type)) {
-      if (this.selectedCell !== null) {
-        if (this.selectedCell !== index) {
-          this.gamePlay.deselectCell(this.selectedCell);
+      if (this.enemyCharactersType.includes(character.type)) {
+        // TODO: здесь надо будет вывести логику, если противник в районе действия, то нанести ему урон
+        
+        GamePlay.showError('Вы не можете ходить персонажем соперника');
+      } else if (this.playerCharacrersType.includes(character.type)) {
+        if (this.selectedCell !== null) {
+          if (this.selectedCell !== index) {
+            this.gamePlay.deselectCell(this.selectedCell);
+            this.gamePlay.selectCell(index);
+            this.selectedCell = index;
+          } else {
+            this.gamePlay.deselectCell(index);
+            this.selectedCell = null;
+          }
+        } else {
           this.gamePlay.selectCell(index);
           this.selectedCell = index;
+        }
+      }
+    } else {
+      if (this.selectedCell !== null) {
+        const movingChar = this.characterPossitionList.find(p => p.position === this.selectedCell);
+        const distance = this.getDistance(this.selectedCell, index);
+        if (distance > movingChar.character.moveDistance) {
+          GamePlay.showError('Слишком далеко');
+          return;
         } else {
-          this.gamePlay.deselectCell(index);
+          movingChar.position = index;
+          this.gamePlay.deselectCell(this.selectedCell);
           this.selectedCell = null;
+          this.gamePlay.redrawPositions(this.characterPossitionList);
+          this.state.currentTurn = 'enemy';
         }
       } else {
-        this.gamePlay.selectCell(index);
-        this.selectedCell = index;
+        GamePlay.showError('Выберите персонажа');
+        return;
       }
-    }
+    } 
+    
   }
 
   onCellEnter(index) {
